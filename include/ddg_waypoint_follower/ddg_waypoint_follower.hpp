@@ -33,8 +33,8 @@ class DDGWaypointFollower : public rclcpp::Node {
 
  private:
   //  config params
-  float GOAL_THREHSOLD = 0.5;  // in meters
-  int WAYPOINT_WAIT = 5000;    // in milliseconds
+  float GOAL_THREHSOLD = 0.25;  // in meters
+  int WAYPOINT_WAIT = 7500;     // in milliseconds
 
   // vars for waiting
   bool pose_lock = false;

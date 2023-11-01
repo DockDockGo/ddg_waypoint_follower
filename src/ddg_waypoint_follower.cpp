@@ -82,6 +82,7 @@ double DDGWaypointFollower::distBetweenPoses(
 
 bool DDGWaypointFollower::isTargetReached(geometry_msgs::msg::PoseStamped &p1,
                                           geometry_msgs::msg::PoseStamped &p2) {
+  // TODO @VineetTambe add yaw threshold
   if (distBetweenPoses(p1, p2) <= GOAL_THREHSOLD) {
     return true;
   }
@@ -184,6 +185,8 @@ void DDGWaypointFollower::waypoint_executor_callback() {
       if (!waitstep_at_waypoint_timer_trigger) {
         waitstep_at_waypoint_timer_trigger = true;
         prev_time = this->now().nanoseconds() / 1000000;
+        RCLCPP_INFO(get_logger(), "Starting wait for %d milliseconds",
+                    WAYPOINT_WAIT);
         return;
       }
 
@@ -200,6 +203,7 @@ void DDGWaypointFollower::waypoint_executor_callback() {
   if (isTargetReached(curr_pose, vars_.waypoints.poses[vars_.waypoint_index])) {
     // reached the current waypoint
     // increment the waypoint index
+    RCLCPP_INFO(get_logger(), "Waypoint %d Reached!", vars_.waypoint_index);
     vars_.waypoint_index++;
 
     return;
