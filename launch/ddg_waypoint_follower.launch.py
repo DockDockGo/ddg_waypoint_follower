@@ -22,8 +22,23 @@ def generate_launch_description():
         description="Namespace",
     )
 
+    # TODO Yaw threshold - not needed as of now as planner does not plan for yaw
+    target_xy_threshold = DeclareLaunchArgument(
+        "target_xy_threshold",
+        default_value="0.25",
+        description="The threshold in meters at which the next waypoint is started.",
+    )
+
+    wait_time = DeclareLaunchArgument(
+        "wait_time",
+        default_value="7500",
+        description="The wait time in milliseconds when a duplicate waypoint is received.",
+    )
+
     ld.add_action(use_sim)
     ld.add_action(namespace)
+    ld.add_action(target_xy_threshold)
+    ld.add_action(wait_time)
 
     ddg_waypoint_follower_node = Node(
         package="ddg_waypoint_follower",
@@ -32,6 +47,8 @@ def generate_launch_description():
         parameters=[
             {"use_sim": LaunchConfiguration("use_sim")},
             {"namespace": LaunchConfiguration("namespace")},
+            {"target_xy_threshold": LaunchConfiguration("target_xy_threshold")},
+            {"wait_time": LaunchConfiguration("wait_time")},
         ],
     )
 

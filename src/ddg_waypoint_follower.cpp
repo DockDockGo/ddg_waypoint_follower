@@ -14,6 +14,11 @@ DDGWaypointFollower::DDGWaypointFollower() : Node("ddg_waypoint_follower") {
   this->declare_parameter<std::string>("namespace", "");
   this->get_parameter("namespace", namespace_);
 
+  this->declare_parameter<float>("target_xy_threshold", 0.25);
+  this->get_parameter("target_xy_threshold", GOAL_THREHSOLD);
+
+  this->declare_parameter<int>("wait_time", 7500);
+  this->get_parameter("wait_time", WAYPOINT_WAIT);
   // TODO @VineetTambe get namespace from the parameter server
 
   //  initialize the publisher to goal pose topic using namespace
