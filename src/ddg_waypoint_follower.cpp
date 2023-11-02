@@ -8,9 +8,6 @@ DDGWaypointFollower::DDGWaypointFollower() : Node("ddg_waypoint_follower") {
   // Initialize member functions, subscribers, publishers, and other private
   // members here.
 
-  this->declare_parameter<bool>("use_sim", true);
-  this->get_parameter("use_sim", use_sim_);
-
   this->declare_parameter<std::string>("namespace", "");
   this->get_parameter("namespace", namespace_);
 
@@ -96,8 +93,7 @@ bool DDGWaypointFollower::isTargetReached(geometry_msgs::msg::PoseStamped &p1,
 
 void DDGWaypointFollower::updateRobotPose() {
   std::string target_frame = "map";  // The frame you want the pose in
-  std::string source_frame =
-      namespace_ + ((use_sim_) ? "base_link" : "/base_link");
+  std::string source_frame = namespace_ + "/base_link";
 
   geometry_msgs::msg::TransformStamped transform_stamped;
   try {

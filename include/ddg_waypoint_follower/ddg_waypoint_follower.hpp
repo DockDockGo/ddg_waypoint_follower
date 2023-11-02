@@ -43,7 +43,6 @@ class DDGWaypointFollower : public rclcpp::Node {
 
   // config variables
   std::string namespace_;
-  bool use_sim_;
 
   geometry_msgs::msg::PoseStamped curr_pose;
 

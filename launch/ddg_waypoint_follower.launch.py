@@ -11,14 +11,9 @@ def generate_launch_description():
     my_package_share_directory = get_package_share_directory("ddg_waypoint_follower")
     # Create the ROS2 launch description
     ld = LaunchDescription()
-    use_sim = DeclareLaunchArgument(
-        "use_sim",
-        default_value="False",
-        description="Simulation or Real)",
-    )
     namespace = DeclareLaunchArgument(
         "namespace",
-        default_value="robot2",
+        default_value="robot1",
         description="Namespace",
     )
 
@@ -35,7 +30,6 @@ def generate_launch_description():
         description="The wait time in milliseconds when a duplicate waypoint is received.",
     )
 
-    ld.add_action(use_sim)
     ld.add_action(namespace)
     ld.add_action(target_xy_threshold)
     ld.add_action(wait_time)
@@ -45,7 +39,6 @@ def generate_launch_description():
         executable="ddg_waypoint_follower_node",
         output="screen",
         parameters=[
-            {"use_sim": LaunchConfiguration("use_sim")},
             {"namespace": LaunchConfiguration("namespace")},
             {"target_xy_threshold": LaunchConfiguration("target_xy_threshold")},
             {"wait_time": LaunchConfiguration("wait_time")},
