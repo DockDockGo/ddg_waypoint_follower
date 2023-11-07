@@ -20,13 +20,13 @@ def generate_launch_description():
     # TODO Yaw threshold - not needed as of now as planner does not plan for yaw
     target_xy_threshold = DeclareLaunchArgument(
         "target_xy_threshold",
-        default_value="0.25",
+        default_value="2.5",
         description="The threshold in meters at which the next waypoint is started.",
     )
 
     wait_time = DeclareLaunchArgument(
         "wait_time",
-        default_value="7500",
+        default_value="10000",
         description="The wait time in milliseconds when a duplicate waypoint is received.",
     )
 

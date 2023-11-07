@@ -16,11 +16,13 @@ DDGWaypointFollower::DDGWaypointFollower() : Node("ddg_waypoint_follower") {
 
   this->declare_parameter<int>("wait_time", 7500);
   this->get_parameter("wait_time", WAYPOINT_WAIT);
-  // TODO @VineetTambe get namespace from the parameter server
 
-  //  initialize the publisher to goal pose topic using namespace
-  //  publisher to publish the goal pose for the custom waypoint
-  // follower
+  RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"),
+                     "namespace_: " << namespace_);
+  RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"),
+                     "GOAL_THREHSOLD: " << GOAL_THREHSOLD);
+  RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"),
+                     "WAYPOINT_WAIT: " << WAYPOINT_WAIT);
 
   // initialize tf buffer and tf listener
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
