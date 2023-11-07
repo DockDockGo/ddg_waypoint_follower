@@ -76,16 +76,49 @@ DDGWaypointFollower::DDGWaypointFollower() : Node("ddg_waypoint_follower") {
       std::bind(&DDGWaypointFollower::waypoint_executor_callback, this));
 }
 
+double DDGWaypointFollower::wrapAroundPi(double angle) {
+  double pi = 3.141592653589793;
+  angle = fabs(angle);
+  if (angle < pi) {
+    return angle;
+  }
+  return fabs(std::fmod((angle + 2 * pi), pi) - pi);
+}
+
+double DDGWaypointFollower::deg2rad(double deg) {
+  return deg * 3.141592653589793 / 180;
+}
+
+double DDGWaypointFollower::rad2deg(double rad) {
+  return rad * 180 / 3.141592653589793;
+}
+
 double DDGWaypointFollower::distBetweenPoses(
     geometry_msgs::msg::PoseStamped &p1, geometry_msgs::msg::PoseStamped &p2) {
   return sqrt(pow(abs(p1.pose.position.x - p2.pose.position.x), 2) +
               pow(abs(p1.pose.position.y - p2.pose.position.y), 2));
 }
 
+double DDGWaypointFollower::angleBetweenPoses(
+    geometry_msgs::msg::PoseStamped &p1, geometry_msgs::msg::PoseStamped &p2) {
+  return wrapAroundPi(tf2::getYaw(tf2::Quaternion(
+                          p1.pose.orientation.x, p1.pose.orientation.y,
+                          p1.pose.orientation.z, p1.pose.orientation.w)) -
+                      tf2::getYaw(tf2::Quaternion(
+                          p2.pose.orientation.x, p2.pose.orientation.y,
+                          p2.pose.orientation.z, p2.pose.orientation.w)));
+}
+
 bool DDGWaypointFollower::isTargetReached(geometry_msgs::msg::PoseStamped &p1,
                                           geometry_msgs::msg::PoseStamped &p2) {
-  // TODO @VineetTambe add yaw threshold
-  if (distBetweenPoses(p1, p2) <= GOAL_THREHSOLD) {
+  // RCLCPP_INFO_STREAM(
+  //     rclcpp::get_logger("rclcpp"),
+  //  "Distance between poses: "
+  //      << distBetweenPoses(p1, p2) <<
+  // " Angle between poses: " << rad2deg(angleBetweenPoses(p1, p2)));
+
+  if (distBetweenPoses(p1, p2) <= GOAL_THREHSOLD &&
+      rad2deg(angleBetweenPoses(p1, p2)) < YAW_THRESHOLD) {
     return true;
   }
   return false;

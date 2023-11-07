@@ -2,6 +2,7 @@
 #define DDG_WAYPOINT_FOLLOWER_HPP_
 
 #include <tf2/exceptions.h>
+#include <tf2/utils.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -34,6 +35,7 @@ class DDGWaypointFollower : public rclcpp::Node {
  private:
   //  config params
   float GOAL_THREHSOLD = 0.25;  // in meters
+  float YAW_THRESHOLD = 20.0;   // in degrees
   int WAYPOINT_WAIT = 7500;     // in milliseconds
 
   // vars for waiting
@@ -79,6 +81,11 @@ class DDGWaypointFollower : public rclcpp::Node {
   void RobotPoseCallback();
   void updateRobotPose();
   void waypoint_executor_callback();
+  double deg2rad(double deg);
+  double rad2deg(double rad);
+  double angleBetweenPoses(geometry_msgs::msg::PoseStamped &p1,
+                           geometry_msgs::msg::PoseStamped &p2);
+  double wrapAroundPi(double angle);
 };
 
 }  // namespace ddg_waypoint_follower
