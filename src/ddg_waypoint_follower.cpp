@@ -31,14 +31,54 @@ DDGWaypointFollower::DDGWaypointFollower() : Node("ddg_waypoint_follower") {
   // set goal pose topic listener
   std::string final_goal_pose_topic_name = "";
   std::string final_execute_waypoint_service_name = "";
+  std::string final_path_visualization_topic_name = "";
+  std::string final_goal_visualization_topic_name = "";
+  std::string final_start_visualization_topic_name = "";
+
+  // set start marker params
+  visualization_start_marker.ns = namespace_;
+  visualization_start_marker.id = 0;
+  visualization_start_marker.action = visualization_msgs::msg::Marker::ADD;
+  visualization_start_marker.scale.x = 1;
+  visualization_start_marker.scale.y = 1;
+  visualization_start_marker.scale.z = 0.1;
+  visualization_start_marker.color.a = 0.3;
+  visualization_start_marker.type = visualization_msgs::msg::Marker::SPHERE;
+  visualization_start_marker.color.r = 0.0;
+  visualization_start_marker.color.g = 1.0;
+  visualization_start_marker.color.b = 0.0;
+
+  // set goal marker params
+  visualization_goal_marker.ns = namespace_;
+  visualization_goal_marker.id = 0;
+  visualization_goal_marker.action = visualization_msgs::msg::Marker::ADD;
+  visualization_goal_marker.scale.x = 1;
+  visualization_goal_marker.scale.y = 1;
+  visualization_goal_marker.scale.z = 0.1;
+  visualization_goal_marker.color.a = 0.3;
+  visualization_goal_marker.type = visualization_msgs::msg::Marker::CUBE;
+  visualization_goal_marker.color.r = 1.0;
+  visualization_goal_marker.color.g = 0.0;
+  visualization_goal_marker.color.b = 0.0;
 
   if (namespace_ == "") {
     final_goal_pose_topic_name += goal_pose_topic_name;
     final_execute_waypoint_service_name += execute_waypoint_service_name;
+
+    final_path_visualization_topic_name += path_visualization_topic;
+    final_goal_visualization_topic_name += goal_visualization_topic;
+    final_start_visualization_topic_name += start_visualization_topic;
   } else {
     final_goal_pose_topic_name += "/" + namespace_ + goal_pose_topic_name;
     final_execute_waypoint_service_name +=
         "/" + namespace_ + execute_waypoint_service_name;
+
+    final_path_visualization_topic_name +=
+        "/" + namespace_ + path_visualization_topic;
+    final_goal_visualization_topic_name +=
+        "/" + namespace_ + goal_visualization_topic;
+    final_start_visualization_topic_name +=
+        "/" + namespace_ + start_visualization_topic;
   }
 
   RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"),
@@ -48,6 +88,18 @@ DDGWaypointFollower::DDGWaypointFollower() : Node("ddg_waypoint_follower") {
   robot_goal_pose_publisher =
       this->create_publisher<geometry_msgs::msg::PoseStamped>(
           final_goal_pose_topic_name, 10);
+
+  robot_path_visualization_publisher =
+      this->create_publisher<nav_msgs::msg::Path>(
+          final_path_visualization_topic_name, 10);
+
+  robot_start_marker_visualization_publisher =
+      this->create_publisher<visualization_msgs::msg::Marker>(
+          final_start_visualization_topic_name, 10);
+
+  robot_goal_marker_visualization_publisher =
+      this->create_publisher<visualization_msgs::msg::Marker>(
+          final_goal_visualization_topic_name, 10);
 
   // initialize a service to accept a nav_msgs::msg::Path and start waypoint
   // following.
@@ -86,7 +138,6 @@ double DDGWaypointFollower::distBetweenPoses(
 
 bool DDGWaypointFollower::isTargetReached(geometry_msgs::msg::PoseStamped &p1,
                                           geometry_msgs::msg::PoseStamped &p2) {
-  // TODO @VineetTambe add yaw threshold
   if (distBetweenPoses(p1, p2) <= GOAL_THREHSOLD) {
     return true;
   }
@@ -135,7 +186,6 @@ void DDGWaypointFollower::handleExecuteWaypointsRequest(
         response) {
   vars_.state = WaypointFollowerState::IDLE;
 
-  // TODO @VineetTambe implement this function
   vars_.waypoint_index = 0;
   vars_.prev_waypoint_index = 0;
   nav_msgs::msg::Path wp = request->waypoints;
@@ -149,9 +199,46 @@ void DDGWaypointFollower::handleExecuteWaypointsRequest(
   response->success = true;
 }
 
-void DDGWaypointFollower::waypoint_executor_callback() {
-  // TODO @VineetTambe implement this function
+void DDGWaypointFollower::publishVisualizations(nav_msgs::msg::Path &waypoints,
+                                                int &idx) {
+  if (waypoints.poses.size() == 0) return;
 
+  if (idx == 0) {
+    // set start marker
+    visualization_start_marker.header.frame_id = "map";
+    visualization_start_marker.header.stamp = this->get_clock()->now();
+    visualization_start_marker.pose = waypoints.poses[0].pose;
+
+    // set goal marker
+    visualization_goal_marker.header.frame_id = "map";
+    visualization_goal_marker.header.stamp = this->get_clock()->now();
+    visualization_goal_marker.pose =
+        waypoints.poses[waypoints.poses.size() - 1].pose;
+
+    // publish markers
+    robot_start_marker_visualization_publisher->publish(
+        visualization_start_marker);
+
+    robot_goal_marker_visualization_publisher->publish(
+        visualization_goal_marker);
+
+    // set path
+    visualization_waypoints.header.frame_id = "map";
+    visualization_waypoints.header.stamp = this->get_clock()->now();
+
+    visualization_waypoints.poses.clear();
+    robot_path_visualization_publisher->publish(visualization_waypoints);
+
+    for (int i = idx; i < (int)waypoints.poses.size(); i++) {
+      visualization_waypoints.poses.push_back(waypoints.poses[i]);
+    }
+
+    // publish path
+    robot_path_visualization_publisher->publish(visualization_waypoints);
+  }
+}
+
+void DDGWaypointFollower::waypoint_executor_callback() {
   if (vars_.state == WaypointFollowerState::IDLE) return;
 
   if (!pose_lock) {
@@ -178,8 +265,11 @@ void DDGWaypointFollower::waypoint_executor_callback() {
     vars_.waypoints.poses[vars_.waypoint_index].header.frame_id = "map";
     vars_.waypoints.poses[vars_.waypoint_index].header.stamp = this->now();
 
+    last_publish_waypoint_time = this->now().nanoseconds() / 1000000;
     robot_goal_pose_publisher->publish(
         vars_.waypoints.poses[vars_.waypoint_index]);
+
+    publishVisualizations(vars_.waypoints, vars_.waypoint_index);
   }
 
   if (vars_.waypoint_index > 0 && vars_.waypoints.poses.size() > 1) {
@@ -208,9 +298,15 @@ void DDGWaypointFollower::waypoint_executor_callback() {
     // increment the waypoint index
     RCLCPP_INFO(get_logger(), "Waypoint %d Reached!", vars_.waypoint_index);
     vars_.waypoint_index++;
-
-    return;
+  } else {
+    if (((this->now().nanoseconds() / 1000000) - last_publish_waypoint_time) >=
+        REPEAT_WAYPOINT_TIME) {
+      last_publish_waypoint_time = this->now().nanoseconds() / 1000000;
+      robot_goal_pose_publisher->publish(
+          vars_.waypoints.poses[vars_.waypoint_index]);
+    }
   }
+  return;
 }
 
 }  // namespace ddg_waypoint_follower
